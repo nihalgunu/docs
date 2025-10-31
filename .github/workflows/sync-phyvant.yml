@@ -24,15 +24,19 @@ jobs:
       - name: Install Mintlify CLI
         run: npm i -g mint
 
-      - name: Copy files from Phyvant repository
-        uses: mintlify/multirepo-action@v1
+      - name: Checkout Phyvant repository
+        uses: actions/checkout@v4
         with:
+          repository: nihalgunu/phyvant
+          ref: main
           token: ${{ secrets.PHYVANT_PAT }}
-          source-repo: nihalgunu/phyvant
-          source-branch: main
-          file-mapping: |
-            backend/docs/openapi/openapi.yaml:openapi/openapi.yaml
-            sdk/python/README.md:content/sdk/README.md
+          path: phyvant-temp
+
+      - name: Copy files from Phyvant repository
+        run: |
+          mkdir -p openapi content/sdk
+          cp phyvant-temp/backend/docs/openapi/openapi.yaml openapi/openapi.yaml
+          cp phyvant-temp/sdk/python/README.md content/sdk/README.md
 
       - name: Validate OpenAPI spec
         run: mint openapi-check openapi/openapi.yaml
