@@ -1,0 +1,64 @@
+name: Sync Phyvant Documentation
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout docs repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Mintlify CLI
+        run: npm i -g mint
+
+      - name: Copy files from Phyvant repository
+        uses: mintlify/multirepo-action@v1
+        with:
+          token: ${{ secrets.PHYVANT_PAT }}
+          source-repo: nihalgunu/phyvant
+          source-branch: main
+          file-mapping: |
+            backend/docs/openapi/openapi.yaml:openapi/openapi.yaml
+            sdk/python/README.md:content/sdk/README.md
+
+      - name: Validate OpenAPI spec
+        run: mint openapi-check openapi/openapi.yaml
+
+      - name: Check for broken links
+        run: mint broken-links
+
+      - name: Check for changes
+        id: check-changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Configure Git
+        if: steps.check-changes.outputs.changes == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Commit and push changes
+        if: steps.check-changes.outputs.changes == 'true'
+        run: |
+          git add -A
+          git commit -m "chore: sync documentation from phyvant repo"
+          git push
+
