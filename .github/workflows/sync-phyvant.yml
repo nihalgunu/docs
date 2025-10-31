@@ -25,12 +25,10 @@ jobs:
         run: npm i -g mint
 
       - name: Checkout Phyvant repository
-        uses: actions/checkout@v4
-        with:
-          repository: nihalgunu/phyvant
-          ref: main
-          token: ${{ secrets.PHYVANT_PAT }}
-          path: phyvant-temp
+        run: |
+          git clone https://x-access-token:${{ secrets.PHYVANT_PAT }}@github.com/nihalgunu/phyvant.git phyvant-temp
+          cd phyvant-temp
+          git checkout main
 
       - name: Copy files from Phyvant repository
         run: |
